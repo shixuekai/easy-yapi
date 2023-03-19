@@ -102,6 +102,10 @@ class Settings : ProjectSettingsSupport, ApplicationSettingsSupport {
 
     override var outputDemo: Boolean = true
 
+    var demoFileEnable: Boolean = true
+
+    var demoFolder: String = "openapi/demo"
+
     /**
      * Charset for out put file
      */

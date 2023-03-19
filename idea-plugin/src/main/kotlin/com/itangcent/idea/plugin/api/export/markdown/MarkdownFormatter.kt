@@ -2,7 +2,10 @@ package com.itangcent.idea.plugin.api.export.markdown
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiClass
+import com.intellij.util.io.fs.FilePath
 import com.itangcent.common.model.Doc
 import com.itangcent.common.model.MethodDoc
 import com.itangcent.common.model.Request
@@ -16,13 +19,18 @@ import com.itangcent.idea.plugin.settings.helper.MarkdownSettingsHelper
 import com.itangcent.idea.psi.UltimateDocHelper
 import com.itangcent.idea.psi.resource
 import com.itangcent.idea.utils.ModuleHelper
+import com.itangcent.idea.utils.ProjectHelper
 import com.itangcent.idea.utils.SystemProvider
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.takeIfNotOriginal
 import com.itangcent.intellij.extend.takeIfSpecial
+import com.itangcent.intellij.extend.toPrettyString
+import com.itangcent.intellij.extend.unbox
 import com.itangcent.intellij.jvm.DuckTypeHelper
+import org.jetbrains.jps.ProjectPaths
+import java.io.File
 
 /**
  * format [com.itangcent.common.model.Doc] to `markdown`.
@@ -371,7 +379,7 @@ class MarkdownFormatter {
                 )
                 writer.doubleLine()
 
-                parseToJson(writer, request.body)
+                writeDemo(writer, request.path.toString(), "req", request.body)
             }
             writer.nextLine()
         }
@@ -467,7 +475,7 @@ class MarkdownFormatter {
                             ?: "**Response Demo:**"
                     )
                     writer.doubleLine()
-                    parseToJson(writer, response.body)
+                    writeDemo(writer, request.path.toString(), "rep", response.body)
                     writer.nextLine()
                 }
             }
@@ -475,11 +483,39 @@ class MarkdownFormatter {
     }
 
     private fun parseToJson(writer: Writer, body: Any?) {
-        writer("```json\n")
         body?.let {
             if (it != 0) {
                 writer(RequestUtils.parseRawBody(it))
             }
+        }
+    }
+
+    private fun readDemoFile(writer: Writer, path: String, suffix: String): Boolean {
+        if (!markdownSettingsHelper.demoFileEnable()) {
+            return false;
+        }
+        var folder = markdownSettingsHelper.demoFolder();
+        if (!folder.endsWith("/")) {
+            folder = folder + "/"
+        }
+
+        var fileName = path
+        if (path.startsWith("/")) {
+            fileName = path.substring(1)
+        }
+        var basePath = ProjectHelper.getCurrentProject(null)?.basePath;
+        var filePath = basePath + File.separator + folder + fileName.replace("/", "-") + "-" + suffix
+        if (!FileUtil.exists(filePath)) {
+            return false
+        }
+        writer(FileUtils.read(File(filePath)) ?: "")
+        return true
+    }
+
+    private fun writeDemo(writer: Writer, path: String, suffix: String, body: Any?) {
+        writer("\n```\n")
+        if (!readDemoFile(writer, path, suffix)) {
+            parseToJson(writer, body)
         }
         writer("\n```\n")
     }
