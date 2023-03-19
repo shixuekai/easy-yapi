@@ -47,6 +47,9 @@ interface ApplicationSettingsSupport {
     var outputDemo: Boolean
     var outputCharset: String
     var markdownFormatType: String
+
+    var writeMarkdown: Boolean
+    var savedFolder: String
     var builtInConfig: String?
 
     var remoteConfig: Array<String>
@@ -85,6 +88,8 @@ interface ApplicationSettingsSupport {
         newSetting.outputDemo = this.outputDemo
         newSetting.outputCharset = this.outputCharset
         newSetting.markdownFormatType = this.markdownFormatType
+        newSetting.writeMarkdown = this.writeMarkdown
+        newSetting.savedFolder = this.savedFolder
         newSetting.builtInConfig = this.builtInConfig
         newSetting.trustHosts = this.trustHosts
         newSetting.remoteConfig = this.remoteConfig
@@ -179,6 +184,10 @@ class ApplicationSettings : ApplicationSettingsSupport {
     override var outputCharset: String = Charsets.UTF_8.displayName()
 
     override var markdownFormatType: String = MarkdownFormatType.SIMPLE.name
+
+    override var writeMarkdown: Boolean = true
+
+    override var savedFolder: String = ""
 
     override var builtInConfig: String? = null
 

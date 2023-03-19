@@ -25,11 +25,11 @@ class MarkdownSettingsHelper {
         return MarkdownFormatType.valueOf(settingBinder.read().markdownFormatType)
     }
 
-    fun demoFileEnable(): Boolean {
-        return settingBinder.read().demoFileEnable
+    fun writeMarkdown(): Boolean {
+        return settingBinder.read().writeMarkdown
     }
 
-    fun demoFolder(): String {
-        return settingBinder.read().demoFolder
+    fun savedFolder(): String {
+        return settingBinder.read().savedFolder
     }
 }

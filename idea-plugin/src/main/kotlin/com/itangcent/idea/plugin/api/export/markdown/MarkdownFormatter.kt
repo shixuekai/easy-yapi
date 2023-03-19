@@ -491,10 +491,10 @@ class MarkdownFormatter {
     }
 
     private fun readDemoFile(writer: Writer, path: String, suffix: String): Boolean {
-        if (!markdownSettingsHelper.demoFileEnable()) {
-            return false;
+        if (!markdownSettingsHelper.writeMarkdown()) {
+            return false
         }
-        var folder = markdownSettingsHelper.demoFolder();
+        var folder = markdownSettingsHelper.savedFolder();
         if (!folder.endsWith("/")) {
             folder = folder + "/"
         }

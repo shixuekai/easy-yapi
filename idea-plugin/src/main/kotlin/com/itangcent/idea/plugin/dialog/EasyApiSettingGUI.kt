@@ -131,6 +131,10 @@ class EasyApiSettingGUI : AbstractEasyApiSettingGUI() {
 
     private var markdownFormatTypeComboBox: JComboBox<String>? = null
 
+    private var writeMarkdownCheckBox: JCheckBox? = null
+
+    private var savedFolderTextField: JTextField? = null
+
     private var inferEnableCheckBox: JCheckBox? = null
 
     private var selectedOnlyCheckBox: JCheckBox? = null
@@ -286,6 +290,9 @@ class EasyApiSettingGUI : AbstractEasyApiSettingGUI() {
         this.queryExpandedCheckBox!!.isSelected = settings.queryExpanded
         this.recommendedCheckBox!!.isSelected = settings.useRecommendConfig
         this.outputDemoCheckBox!!.isSelected = settings.outputDemo
+
+        this.writeMarkdownCheckBox!!.isSelected = settings.writeMarkdown
+        this.savedFolderTextField!!.text = settings.savedFolder ?: ""
 
 
         this.yapiServerTextField!!.text = settings.yapiServer ?: ""
@@ -616,6 +623,8 @@ class EasyApiSettingGUI : AbstractEasyApiSettingGUI() {
         settings.outputCharset = (outputCharsetComboBox!!.selectedItem as? Charsets ?: Charsets.UTF_8).displayName()
         settings.markdownFormatType =
             markdownFormatTypeComboBox!!.selected() ?: MarkdownFormatType.SIMPLE.name
+        settings.writeMarkdown = writeMarkdownCheckBox!!.isSelected
+        settings.savedFolder = savedFolderTextField!!.text
         settings.trustHosts = trustHostsTextArea!!.text?.lines()?.toTypedArray() ?: emptyArray()
         settings.postmanWorkspace = settingsInstance?.postmanWorkspace
         settings.postmanExportMode = postmanExportModeComboBox!!.selected() ?: PostmanExportMode.COPY.name
