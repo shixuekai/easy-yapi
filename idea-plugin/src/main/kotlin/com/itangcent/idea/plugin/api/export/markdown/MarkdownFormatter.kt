@@ -2,10 +2,8 @@ package com.itangcent.idea.plugin.api.export.markdown
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiClass
-import com.intellij.util.io.fs.FilePath
 import com.itangcent.common.model.Doc
 import com.itangcent.common.model.MethodDoc
 import com.itangcent.common.model.Request
@@ -26,10 +24,7 @@ import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.takeIfNotOriginal
 import com.itangcent.intellij.extend.takeIfSpecial
-import com.itangcent.intellij.extend.toPrettyString
-import com.itangcent.intellij.extend.unbox
 import com.itangcent.intellij.jvm.DuckTypeHelper
-import org.jetbrains.jps.ProjectPaths
 import java.io.File
 
 /**
@@ -494,9 +489,13 @@ class MarkdownFormatter {
         if (!markdownSettingsHelper.writeMarkdown()) {
             return false
         }
-        var folder = markdownSettingsHelper.savedFolder();
+        var folder = markdownSettingsHelper.savedFolder()
+        if (folder.length < 0) {
+            throw IllegalArgumentException("savedFolder not set")
+        }
+
         if (!folder.endsWith("/")) {
-            folder = folder + "/"
+            folder += "/"
         }
 
         var fileName = path
@@ -508,7 +507,7 @@ class MarkdownFormatter {
         if (!FileUtil.exists(filePath)) {
             return false
         }
-        writer(FileUtils.read(File(filePath)) ?: "")
+        writer(FileUtils.read(File(filePath))?.replace("\t", "  ") ?: "")
         return true
     }
 

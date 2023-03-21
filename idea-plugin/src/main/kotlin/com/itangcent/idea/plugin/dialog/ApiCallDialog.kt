@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.google.inject.name.Named
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.ui.BooleanTableCellEditor
 import com.intellij.ui.BooleanTableCellRenderer
 import com.intellij.ui.components.JBTabbedPane
@@ -22,6 +23,7 @@ import com.itangcent.idea.binder.DbBeanBinderFactory
 import com.itangcent.idea.icons.EasyIcons
 import com.itangcent.idea.icons.iconOnly
 import com.itangcent.idea.plugin.api.call.ApiCallUI
+import com.itangcent.idea.plugin.settings.helper.MarkdownSettingsHelper
 import com.itangcent.idea.plugin.utils.CompensateRateLimiter
 import com.itangcent.idea.psi.resourceClass
 import com.itangcent.idea.psi.resourceMethod
@@ -32,6 +34,7 @@ import com.itangcent.intellij.extend.rx.ThrottleHelper
 import com.itangcent.intellij.extend.withBoundary
 import com.itangcent.intellij.file.LocalFileRepository
 import com.itangcent.intellij.psi.PsiClassUtils
+import com.itangcent.intellij.util.FileUtils
 import com.itangcent.suv.http.HttpClientProvider
 import org.apache.commons.lang3.RandomUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
@@ -40,6 +43,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.awt.event.*
 import java.io.Closeable
+import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.swing.*
 import javax.swing.event.TableModelListener
@@ -47,6 +51,7 @@ import javax.swing.table.DefaultTableModel
 import javax.swing.table.TableColumn
 import javax.swing.table.TableModel
 import javax.swing.text.JTextComponent
+import kotlin.text.Charsets
 
 
 @Suppress("UnstableApiUsage")
@@ -75,6 +80,7 @@ class ApiCallDialog : ContextDialog(), ApiCallUI {
     private lateinit var responsePanel: JBTabbedPane
     private lateinit var formatOrRawButton: JButton
     private lateinit var saveButton: JButton
+    private lateinit var saveAsDemoButton: JButton
     private lateinit var responseActionPanel: JPanel
     private lateinit var responseHeadersTextArea: JTextArea
     private lateinit var requestHeadersTextArea: JTextArea
@@ -88,6 +94,9 @@ class ApiCallDialog : ContextDialog(), ApiCallUI {
     private lateinit var contentTypeLabel: JLabel
     private lateinit var contentTypeComboBox: JComboBox<String>
 
+    @Inject
+    protected lateinit var markdownSettingsHelper: MarkdownSettingsHelper
+
 //    private val autoComputer: AutoComputer = AutoComputer()
 
     private var apiList: List<ApiInfo>? = null
@@ -98,6 +107,8 @@ class ApiCallDialog : ContextDialog(), ApiCallUI {
     private var currResponse: ResponseStatus? = null
 
     private var currUrl: String? = null
+
+    private var currPath: String? = null
 
     private var hostComboBox: JComboBox<String>? = null
 
@@ -149,6 +160,8 @@ class ApiCallDialog : ContextDialog(), ApiCallUI {
 
         saveButton.addActionListener { onSaveClick() }
 
+        saveAsDemoButton.addActionListener { onSaveAsDemoClick() }
+
         paramsTextField.registerKeyboardAction({
             try {
                 val paramsTex: String = paramsTextField.text
@@ -177,6 +190,7 @@ class ApiCallDialog : ContextDialog(), ApiCallUI {
         callButton.isFocusPainted = false
         formatOrRawButton.isFocusPainted = false
         saveButton.isFocusPainted = false
+        saveAsDemoButton.isFocusPainted = false
 
         SwingUtils.underLine(this.hostComboBox!!)
         SwingUtils.underLine(this.pathTextField)
@@ -921,6 +935,7 @@ class ApiCallDialog : ContextDialog(), ApiCallUI {
                     .path(path)
                     .query(query).url()
                 this.currUrl = url
+                this.currPath = path
                 val httpRequest = getHttpClient().request().method(request.method ?: "GET")
                     .url(url)
 
@@ -1057,6 +1072,61 @@ class ApiCallDialog : ContextDialog(), ApiCallUI {
         }, {
             logger.info("cancel save response")
         })
+    }
+
+    private fun onSaveAsDemoClick() {
+        refreshDataFromUI()
+        if (this.currResponse == null) {
+            Messages.showMessageDialog(
+                this, "No Response",
+                "Error", Messages.getErrorIcon()
+            )
+            return
+        }
+
+        val response = this.currResponse!!.response
+        val bytes = response.bytes()
+        if (bytes == null) {
+            Messages.showMessageDialog(
+                this, "Response is empty",
+                "Error", Messages.getErrorIcon()
+            )
+            return
+        }
+
+        var folder = markdownSettingsHelper.savedFolder()
+        if (folder.length < 0) {
+            throw IllegalArgumentException("savedFolder not set")
+        }
+
+        if (!folder.endsWith("/")) {
+            folder += "/"
+        }
+
+        var fileName = this.currPath
+        if (this.currPath!!.startsWith("/")) {
+            fileName = this.currPath!!.substring(1)
+        }
+        var basePath = ProjectHelper.getCurrentProject(null)?.basePath;
+        var filePath = basePath + File.separator + folder + fileName!!.replace("/", "-") + "-"
+
+
+        try {
+            FileUtils.forceSave(filePath + "req", this.currRequest!!.body!!.toByteArray(Charsets.UTF_8))
+        } catch (e: Exception) {
+            logger.info("save request failed")
+            logger.traceError("save request error", e)
+        }
+        logger.info("save request success")
+
+
+        try {
+            FileUtils.forceSave(filePath + "rep", bytes)
+        } catch (e: Exception) {
+            logger.info("save response failed")
+            logger.traceError("save response error", e)
+        }
+        logger.info("save response success")
     }
 
     //endregion

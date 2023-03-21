@@ -30,9 +30,13 @@ object ProjectHelper {
         }
 
         for (project in projects) {
-            val window = wm.suggestParentWindow(project)
-            if (window != null && window.isActive) {
-                return project
+            try {
+                val window = wm.suggestParentWindow(project)
+                if (window != null && window.isActive) {
+                    return project
+                }
+            } catch (e: Exception) {
+                ///ignore
             }
         }
 
